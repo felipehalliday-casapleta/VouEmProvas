@@ -1,16 +1,34 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/theme-provider";
+import { NavHeader } from "@/components/nav-header";
 import NotFound from "@/pages/not-found";
+import HojePage from "@/pages/hoje";
+import AntesPage from "@/pages/antes";
+import DepoisPage from "@/pages/depois";
+import VideosPage from "@/pages/videos";
+import MiniGamesPage from "@/pages/minigames";
+import EventoDetailPage from "@/pages/evento-detail";
+import StatusPage from "@/pages/status";
+import BuscaPage from "@/pages/busca";
 
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/">
+        <Redirect to="/hoje" />
+      </Route>
+      <Route path="/hoje" component={HojePage} />
+      <Route path="/antes" component={AntesPage} />
+      <Route path="/depois" component={DepoisPage} />
+      <Route path="/videos" component={VideosPage} />
+      <Route path="/minigames" component={MiniGamesPage} />
+      <Route path="/evento/:id" component={EventoDetailPage} />
+      <Route path="/status" component={StatusPage} />
+      <Route path="/busca" component={BuscaPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -19,10 +37,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="dark">
+        <TooltipProvider>
+          <NavHeader />
+          <Router />
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
