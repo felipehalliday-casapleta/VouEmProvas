@@ -11,7 +11,8 @@ import {
   Activity,
   Search,
   User,
-  LogOut
+  LogOut,
+  Menu
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -21,10 +22,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useState } from "react"
 
 export function NavHeader() {
   const [location, setLocation] = useLocation()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
     { path: "/hoje", label: "Hoje", icon: Calendar },
@@ -37,10 +47,56 @@ export function NavHeader() {
 
   const currentTab = navItems.find(item => location === item.path)?.path || "/hoje"
 
+  const handleNavigation = (path: string) => {
+    setLocation(path)
+    setMobileMenuOpen(false)
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-4 gap-4">
         <div className="flex items-center gap-3">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild className="md:hidden">
+              <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-2 mt-6">
+                {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = location === item.path
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={isActive ? "secondary" : "ghost"}
+                      className="justify-start gap-3 h-12"
+                      onClick={() => handleNavigation(item.path)}
+                      data-testid={`mobile-nav-${item.label.toLowerCase()}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-base">{item.label}</span>
+                    </Button>
+                  )
+                })}
+                <div className="border-t my-2" />
+                <Button
+                  variant="ghost"
+                  className="justify-start gap-3 h-12"
+                  onClick={() => handleNavigation("/busca")}
+                  data-testid="mobile-nav-busca"
+                >
+                  <Search className="h-5 w-5" />
+                  <span className="text-base">Busca</span>
+                </Button>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-semibold text-sm">VP</span>
@@ -76,6 +132,7 @@ export function NavHeader() {
             variant="ghost"
             size="icon"
             onClick={() => setLocation("/busca")}
+            className="hidden md:flex"
             data-testid="button-search"
           >
             <Search className="h-5 w-5" />
