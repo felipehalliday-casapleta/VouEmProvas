@@ -1,0 +1,350 @@
+Build a modern internal web app called “VOU EM PROVAS” (this is not an editorial planner).
+ Goal: a secure internal dashboard that reads/writes Google Sheets to list events (“provas”), open their files, log views, and show media. Do not touch Google Drive folders — ingestion/moves are handled by an external Cloud Run worker.
+Tech & quality bar
+Stack: Next.js (latest, App Router) + TypeScript + Tailwind + shadcn/ui.
+
+
+UX: Neutral, production-grade dark mode by default (toggle to light). Clean cards, responsive grid, empty states, loading skeletons, toast feedback on mutations, keyboard accessibility.
+
+
+Timezone: America/Sao_Paulo (server and UI). Dates displayed as DD/MM.
+
+
+Auth, access control & security
+Auth: Google OAuth (e.g., next-auth).
+
+
+Allowlist: only users in ALLOWED_EMAILS (comma-separated). Reject anyone else server-side.
+
+
+RBAC minimal: roles admin, editor, viewer (map by email in env or config).
+
+
+Security: never expose secrets to the client; use server-only env vars; protect all (protected) routes via middleware; add basic CSP headers; strict type validation on API routes; sanitize inputs; close CORS.
+
+
+Privacy: Logs page/section visible only to admin; it shows only UserEmail (no device/browser).
+
+
+Data source: Google Sheets (Service Account) — READ/WRITE
+Use Google Sheets API v4 with a Service Account loaded from env vars. The app must:
+READ from these tabs and WRITE to Arquivos (increment view counters) and append to Logs (view records).
+
+
+Implement robust retry with small backoff on mutations.
+
+
+SHEET_ID is provided via env. Share the sheet with the Service Account as Editor.
+Tabs & columns (exact schema)
+Use these exact header names:
+Eventos
+ EventID, Data, Nome, Tipo, Genero, DataExibicao, VersaoDescritivo, CriadoEm, AtualizadoEm, Local, AnotacoesDaCriacao, Status, DataISO
+Arquivos
+ FileID, EventID, TipoDocumento, Versao, ViewURL, DriveId, Origem, ViewCount, AtualizadoEm
+Fotos
+ FotoID, EventID, DriveId, Ordem, Imagem, Descricao, CriadoEm, AtualizadoEm, Ativo, Credito
+Logs
+ LogID, FileID, EventID, UserEmail, ViewedAt, ViewSource
+Notes:
+ • DataISO is authoritative for date comparisons (Hoje/Antes/Depois).
+ • Origem is an enum {D, G, R}.
+ • TipoDocumento is a controlled list: “Descritivo (PDF)”, “Gabarito (PDF)”, “Roteiro (PDF)”, “Resumo Em Video”, “MiniGame”, etc.
+ • Do not persist IsHoje/IsFuturo/IsPassado in sheets. Compute at runtime.
+Pages / navigation (App Router)
+Create protected routes under app/(protected)/…, plus a sign-in route.
+Hoje — list Eventos where DataISO is “today” (America/Sao_Paulo). Card/list layout with quick filters by Tipo and search by Nome.
+
+
+Antes — Eventos where DataISO < today (sort desc by date).
+
+
+Depois — Eventos where DataISO > today (sort asc by date).
+
+
+Vídeos — list from Arquivos filtered by TipoDocumento = "Resumo Em Video" (cards with title, chip for Versao, button “Visualizar”).
+
+
+MiniGames — list from Arquivos filtered by TipoDocumento = "MiniGame".
+
+
+Evento (detalhe) — show all Evento fields; below it:
+
+
+Arquivos (cards): each card shows TipoDocumento, Versao, and has the Visualizar action (see below).
+
+
+Fotos (gallery grid): order by Ordem, show Imagem (URL) and optional Credito. Hide items with Ativo = false.
+
+
+Logs (admin-only): small table with only UserEmail (obscure other fields in UI), newest first.
+
+
+Status — read-only dashboard pulling simple fields from a Config tab if it exists (OK to render a placeholder if not). Show “last processed at/token” if available.
+
+
+Busca global — search Eventos by Nome/Tipo and Arquivos by TipoDocumento.
+
+
+Important: On list pages (“Hoje/Antes/Depois”), do not show Arquivos inline. Files appear only on the Evento (detalhe) page.
+Core action: “Visualizar” (front-initiated, Sheets write)
+When a user clicks Visualizar on an Arquivo card:
+Append a row to Logs:
+
+ {
+  LogID: uuid(),
+  FileID,
+  EventID,
+  UserEmail: current user (from Google auth),
+  ViewedAt: now() in America/Sao_Paulo (store ISO with -03:00),
+  ViewSource: "WEB-APP"
+}
+
+
+Increment ViewCount for that FileID in Arquivos, set LastViewedAt (if exists) and LastViewedBy (if exists) accordingly; always update AtualizadoEm to now.
+
+
+Open the ViewURL in a new tab.
+
+
+Show toast feedback on success/error; retry mutations briefly on transient failures.
+
+
+All mutations must be done server-side via API routes or server actions. Never expose Service Account creds to the browser.
+Code structure
+lib/sheets.ts — typed client for Sheets with helpers:
+
+
+getEventos() (with optional filters/sort in code)
+
+
+getEventoById(eventId)
+
+
+getArquivosByEvent(eventId)
+
+
+getFotosByEvent(eventId)
+
+
+appendLog(logRow)
+
+
+incrementArquivoViewCount(fileId, userEmail) (atomic pattern: read row index, update ViewCount/LastViewedAt/By/AtualizadoEm)
+
+
+lib/date.ts — utilities for TZ and “isToday/isFuture/isPast” based on DataISO.
+
+
+app/api/logs/append/route.ts and app/api/arquivos/increment/route.ts — POST endpoints with zod validation, role checks, backoff on Sheets write, and clear error responses.
+
+
+Auth middleware to enforce allowlist + role injection on request.user.
+
+
+UI components using shadcn/ui (Navbar with tabs: Hoje, Antes, Depois, Vídeos, MiniGames, Status; User menu with sign out and theme toggle).
+
+
+Enums & validation
+Strongly type Tipo, TipoDocumento, Origem. Use zod schemas on all API inputs.
+
+
+Validate EventID, FileID as non-empty strings.
+
+
+For safe UI, treat Imagem as external URL; if empty, render a placeholder.
+
+
+Environment variables (.env.example)
+Provide a real .env.example and load in dev/preview/prod:
+# Auth (NextAuth + Google)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=
+
+# Access control
+ALLOWED_EMAILS=felipe@exemplo.com,outro@exemplo.com
+ROLE_ADMIN_EMAILS=felipe@exemplo.com
+
+# Sheets
+SHEET_ID=1iGTs0p3BbyhAZvm8AmGj7EsB3RcImcVDO-5W33CAmwg
+GOOGLE_SERVICE_ACCOUNT_EMAIL=vou-em-provas-sa@scenic-impact-326208.iam.gserviceaccount.com
+# Put the private key with \n line breaks escaped:
+GOOGLE_SERVICE_ACCOUNT_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# App
+TZ=America/Sao_Paulo
+
+Scripts, build & deploy
+package.json scripts
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "deploy:cloudrun": "echo 'Use gcloud builds submit && gcloud run deploy ...'",
+    "deploy:firebase": "echo 'Use firebase deploy --only hosting'"
+  }
+}
+
+Dockerfile (Cloud Run)
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+RUN npm run build
+EXPOSE 8080
+ENV PORT=8080
+CMD ["npm","start","--","-p","8080"]
+
+README.md (must include)
+Setup Google OAuth (Console), NextAuth config.
+
+
+Share the Google Sheet with the Service Account as Editor.
+
+
+Env vars table and how to paste the private key safely.
+
+
+Dev (npm run dev), build (npm run build), run (npm start).
+
+
+Cloud Run deploy commands and Firebase Hosting alternative (with rewrites for SSR).
+
+
+Out of scope (enforce)
+Do not implement Drive moves/export. That is handled by the external Cloud Run worker (vep-worker). This app only touches Google Sheets and opens ViewURL.
+
+
+Deliverables
+Running Next.js app with the pages/actions above.
+
+
+Typed Sheets client with helpers and basic tests/stubs where applicable.
+
+
+.env.example, Dockerfile, and README with setup/deploy steps.
+
+
+Clean, accessible, dark-first UI with shadcn/ui components.
+
+
+Routes & Architecture Glossary
+🗂 Estrutura geral / General structure
+/login — página de autenticação via Google (OAuth).
+ (Login page via Google OAuth.)
+
+
+/(protected) — rotas internas protegidas (requer login e e-mail autorizado).
+ (All internal routes protected by auth middleware.)
+
+
+
+🌅 Main pages
+Rota / Route
+Função (PT)
+Function (EN)
+Fonte / Source
+/hoje
+Lista eventos com DataISO = hoje.
+Lists events where DataISO equals today.
+Eventos
+/antes
+Lista eventos com DataISO < hoje (decrescente).
+Lists past events (descending by date).
+Eventos
+/depois
+Lista eventos com DataISO > hoje (crescente).
+Lists future events (ascending by date).
+Eventos
+/evento/[eventId]
+Detalhe do evento, com Arquivos, Fotos e Logs.
+Event detail page showing files, photos and logs.
+Eventos, Arquivos, Fotos, Logs
+/videos
+Lista arquivos com TipoDocumento = "Resumo Em Video".
+Lists files with TipoDocumento = "Resumo Em Video".
+Arquivos
+/minigames
+Lista arquivos com TipoDocumento = "MiniGame".
+Lists files with TipoDocumento = "MiniGame".
+Arquivos
+/status
+Mostra status da automação (aba Config).
+Displays automation status (Config tab).
+Config
+/busca
+Busca global por Nome/Tipo/TipoDocumento.
+Global search by Name/Type/Document Type.
+Eventos, Arquivos
+
+
+⚙️ Rotas de API / API Routes
+Endpoint
+Ação (PT)
+Action (EN)
+Operação no Sheets
+POST /api/logs/append
+Registra visualização (Log).
+Append a new view log entry.
+Append row to Logs
+POST /api/arquivos/increment
+Incrementa contador de visualizações.
+Increment file view counter.
+Update Arquivos
+GET /api/eventos
+Lista eventos.
+List all events with optional filters/sorting.
+Read Eventos
+GET /api/eventos/[eventId]
+Retorna dados completos do evento.
+Returns full event details (with relations).
+Read from Eventos, Arquivos, Fotos, Logs
+GET /api/status
+Retorna status básico da automação.
+Returns simple automation/config status.
+Read Config
+
+
+🧩 Estrutura de pastas / Folder structure (Next.js App Router)
+app/
+ ├─ (public)/
+ │   └─ login/              → /login
+ ├─ (protected)/
+ │   ├─ hoje/               → /hoje
+ │   ├─ antes/              → /antes
+ │   ├─ depois/             → /depois
+ │   ├─ evento/[eventId]/   → /evento/:eventId
+ │   ├─ videos/             → /videos
+ │   ├─ minigames/          → /minigames
+ │   ├─ status/             → /status
+ │   └─ busca/              → /busca
+ └─ api/
+     ├─ logs/append/
+     ├─ arquivos/increment/
+     ├─ eventos/
+     └─ status/
+
+(Each directory inside app/ corresponds to a route; protected routes use middleware enforcing authentication and email allowlist.)
+
+🔗 Relações entre abas / Sheet relationships
+Relação (PT)
+Relationship (EN)
+Eventos → 1:N → Arquivos
+One Event has many Files
+Eventos → 1:N → Fotos
+One Event has many Photos
+Eventos → 1:N → Logs
+One Event has many Logs
+Arquivos → 1:N → Logs
+One File has many Logs
+
+
+Reference Note:
+I have attached the official document “VOU EM PROVAS – AppSheet Version” as a reference only.
+It describes the legacy structure, logic, and terminology of the previous version of this app.
+Use it only to understand the context, naming conventions, and data model — do not attempt to replicate the AppSheet implementation.
+The new version must follow the full instructions provided in this prompt, using Next.js, Google Sheets API, and modern web best practices.
