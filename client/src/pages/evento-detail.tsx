@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useRoute, Link } from "wouter"
+import { useRoute } from "wouter"
 import { ArquivoCard } from "@/components/arquivo-card"
 import { PhotoGrid, type Photo } from "@/components/photo-grid"
 import { Button } from "@/components/ui/button"
@@ -88,12 +88,15 @@ export default function EventoDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link href="/hoje">
-          <Button variant="ghost" className="mb-6" data-testid="button-back">
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </Link>
+        <Button 
+          variant="ghost" 
+          className="mb-6" 
+          onClick={() => window.history.back()}
+          data-testid="button-back"
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
 
         <Card className="mb-12">
           <CardHeader>
