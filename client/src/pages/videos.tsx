@@ -1,51 +1,24 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { ArquivoCard } from "@/components/arquivo-card"
 import { SearchBar } from "@/components/search-bar"
 import { EmptyState } from "@/components/empty-state"
 import { Video } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Arquivo } from "@shared/schema"
 
 export default function VideosPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { toast } = useToast()
   
-  // TODO: Remove mock data - replace with actual API call
-  const mockVideos = [
-    {
-      fileId: "vid-001",
-      tipoDocumento: "Resumo Em Video",
-      versao: "1.0",
-      viewCount: 156,
-      eventName: "ENEM 2024 - Matemática"
-    },
-    {
-      fileId: "vid-002",
-      tipoDocumento: "Resumo Em Video",
-      versao: "2.1",
-      viewCount: 89,
-      eventName: "Vestibular FUVEST - Física"
-    },
-    {
-      fileId: "vid-003",
-      tipoDocumento: "Resumo Em Video",
-      versao: "1.5",
-      viewCount: 234,
-      eventName: "OAB - Direito Civil"
-    }
-  ]
+  const { data: allArquivos = [], isLoading } = useQuery<Arquivo[]>({
+    queryKey: ['/api', 'arquivos'],
+  })
 
-  const filteredVideos = mockVideos.filter(video =>
-    video.eventName.toLowerCase().includes(searchQuery.toLowerCase())
+  const videos = allArquivos.filter(arquivo => arquivo.tipo === 'Video')
+
+  const filteredVideos = videos.filter(video =>
+    video.nome.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const handleVisualize = (fileId: string) => {
-    // TODO: Remove mock functionality - implement actual API call
-    console.log('Visualizar video:', fileId)
-    toast({
-      title: "Abrindo vídeo",
-      description: "O vídeo será aberto em uma nova aba.",
-    })
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,22 +33,34 @@ export default function VideosPage() {
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Buscar vídeos..."
+            data-testid="input-search"
           />
         </div>
 
-        {filteredVideos.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-40" data-testid={`skeleton-video-${i}`} />
+            ))}
+          </div>
+        ) : filteredVideos.length === 0 ? (
           <EmptyState
             icon={Video}
             title="Nenhum vídeo encontrado"
-            description="Não há vídeos correspondentes à sua busca."
+            description={searchQuery 
+              ? "Não há vídeos correspondentes à sua busca."
+              : "Não há vídeos disponíveis no momento."}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredVideos.map((video) => (
               <ArquivoCard
-                key={video.fileId}
-                {...video}
-                onVisualize={() => handleVisualize(video.fileId)}
+                key={video.id}
+                id={video.id}
+                nome={video.nome}
+                tipo={video.tipo}
+                viewUrl={video.viewUrl}
+                viewCount={video.viewCount}
               />
             ))}
           </div>

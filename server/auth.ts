@@ -4,14 +4,20 @@ import type { Request, Response, NextFunction } from 'express';
 import type { AuthUser, UserRole } from '@shared/schema';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production';
 const ROLE_MAP_STR = process.env.ROLE_MAP || '{}';
 
-if (!GOOGLE_CLIENT_ID) {
-  throw new Error('GOOGLE_CLIENT_ID environment variable is required');
-}
+let client: OAuth2Client | null = null;
 
-const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+function getGoogleClient(): OAuth2Client {
+  if (!GOOGLE_CLIENT_ID) {
+    throw new Error('GOOGLE_CLIENT_ID environment variable is required');
+  }
+  if (!client) {
+    client = new OAuth2Client(GOOGLE_CLIENT_ID);
+  }
+  return client;
+}
 
 let ROLE_MAP: Record<string, UserRole>;
 try {
@@ -29,7 +35,8 @@ export interface JWTPayload {
 
 export async function verifyGoogleToken(idToken: string): Promise<{ email: string; name?: string }> {
   try {
-    const ticket = await client.verifyIdToken({
+    const googleClient = getGoogleClient();
+    const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: GOOGLE_CLIENT_ID,
     });

@@ -1,71 +1,33 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { EventCard } from "@/components/event-card"
 import { ArquivoCard } from "@/components/arquivo-card"
 import { SearchBar } from "@/components/search-bar"
 import { EmptyState } from "@/components/empty-state"
 import { Search } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Evento, Arquivo } from "@shared/schema"
 
 export default function BuscaPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { toast } = useToast()
   
-  // TODO: Remove mock data - replace with actual API call
-  const mockEvents = [
-    {
-      eventId: "evt-001",
-      nome: "ENEM 2024 - Primeiro Dia",
-      tipo: "ENEM",
-      genero: "Educação",
-      data: "08/11/2024",
-      local: "Todo Brasil"
-    },
-    {
-      eventId: "evt-002",
-      nome: "Vestibular FUVEST 2024",
-      tipo: "Vestibular",
-      genero: "Educação",
-      data: "26/11/2024",
-      local: "São Paulo, SP"
-    }
-  ]
+  const { data: eventos = [], isLoading: isLoadingEventos } = useQuery<Evento[]>({
+    queryKey: searchQuery ? [`/api/eventos?query=${encodeURIComponent(searchQuery)}`] : ['/api', 'eventos'],
+    enabled: !!searchQuery,
+  })
 
-  const mockArquivos = [
-    {
-      fileId: "file-001",
-      tipoDocumento: "Descritivo (PDF)",
-      versao: "2.1",
-      viewCount: 145,
-      eventName: "ENEM 2024"
-    },
-    {
-      fileId: "file-002",
-      tipoDocumento: "Resumo Em Video",
-      versao: "1.5",
-      viewCount: 234,
-      eventName: "ENEM 2024"
-    }
-  ]
+  const { data: arquivos = [], isLoading: isLoadingArquivos } = useQuery<Arquivo[]>({
+    queryKey: ['/api', 'arquivos'],
+    enabled: !!searchQuery,
+  })
 
-  const filteredEvents = mockEvents.filter(event =>
-    event.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    event.tipo.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredArquivos = arquivos.filter(arquivo =>
+    arquivo.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    arquivo.tipo.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const filteredArquivos = mockArquivos.filter(arquivo =>
-    arquivo.tipoDocumento.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    arquivo.eventName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const handleVisualize = (fileId: string) => {
-    // TODO: Remove mock functionality - implement actual API call
-    console.log('Visualizar arquivo:', fileId)
-    toast({
-      title: "Abrindo arquivo",
-      description: "O arquivo será aberto em uma nova aba.",
-    })
-  }
+  const isLoading = isLoadingEventos || isLoadingArquivos
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,6 +42,7 @@ export default function BuscaPage() {
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Buscar por nome, tipo ou documento..."
+            data-testid="input-search"
           />
         </div>
 
@@ -89,11 +52,36 @@ export default function BuscaPage() {
             title="Digite para buscar"
             description="Use a barra de busca acima para encontrar eventos e arquivos."
           />
+        ) : isLoading ? (
+          <Tabs defaultValue="eventos" className="w-full">
+            <TabsList>
+              <TabsTrigger value="eventos" data-testid="tab-eventos">
+                Eventos
+              </TabsTrigger>
+              <TabsTrigger value="arquivos" data-testid="tab-arquivos">
+                Arquivos
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="eventos" className="mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-48" data-testid={`skeleton-event-${i}`} />
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="arquivos" className="mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-40" data-testid={`skeleton-arquivo-${i}`} />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         ) : (
           <Tabs defaultValue="eventos" className="w-full">
             <TabsList>
               <TabsTrigger value="eventos" data-testid="tab-eventos">
-                Eventos ({filteredEvents.length})
+                Eventos ({eventos.length})
               </TabsTrigger>
               <TabsTrigger value="arquivos" data-testid="tab-arquivos">
                 Arquivos ({filteredArquivos.length})
@@ -101,7 +89,7 @@ export default function BuscaPage() {
             </TabsList>
             
             <TabsContent value="eventos" className="mt-6">
-              {filteredEvents.length === 0 ? (
+              {eventos.length === 0 ? (
                 <EmptyState
                   icon={Search}
                   title="Nenhum evento encontrado"
@@ -109,8 +97,16 @@ export default function BuscaPage() {
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredEvents.map((event) => (
-                    <EventCard key={event.eventId} {...event} />
+                  {eventos.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      eventId={event.id}
+                      nome={event.nome}
+                      tipo={event.tipo}
+                      data={event.data}
+                      local={event.local}
+                      status={event.status}
+                    />
                   ))}
                 </div>
               )}
@@ -127,9 +123,12 @@ export default function BuscaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredArquivos.map((arquivo) => (
                     <ArquivoCard
-                      key={arquivo.fileId}
-                      {...arquivo}
-                      onVisualize={() => handleVisualize(arquivo.fileId)}
+                      key={arquivo.id}
+                      id={arquivo.id}
+                      nome={arquivo.nome}
+                      tipo={arquivo.tipo}
+                      viewUrl={arquivo.viewUrl}
+                      viewCount={arquivo.viewCount}
                     />
                   ))}
                 </div>

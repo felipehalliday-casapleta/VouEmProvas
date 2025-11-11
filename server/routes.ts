@@ -28,11 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json({
-        user: {
-          email,
-          name,
-          role,
-        },
+        email,
+        name,
+        role,
       });
     } catch (error: any) {
       res.status(401).json({ error: error.message || 'Authentication failed' });
@@ -45,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.get("/api/auth/me", requireAuth, (req, res) => {
-    res.json({ user: req.user });
+    res.json(req.user);
   });
   
   app.get("/api/eventos", requireAuth, async (req, res) => {
@@ -73,6 +71,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to fetch evento' });
+    }
+  });
+  
+  app.get("/api/arquivos", requireAuth, async (req, res) => {
+    try {
+      const arquivos = await sheetsService.getArquivos();
+      res.json(arquivos);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to fetch arquivos' });
     }
   });
   

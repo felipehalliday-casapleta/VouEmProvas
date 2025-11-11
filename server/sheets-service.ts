@@ -1,10 +1,12 @@
 import { readSheetData, appendSheetData } from './sheets-client';
 import type { Evento, Arquivo, Foto, Log } from '@shared/schema';
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
-
-if (!SPREADSHEET_ID) {
-  throw new Error('GOOGLE_SHEET_ID environment variable is required');
+function getSpreadsheetId(): string {
+  const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
+  if (!SPREADSHEET_ID) {
+    throw new Error('GOOGLE_SHEET_ID environment variable is required');
+  }
+  return SPREADSHEET_ID;
 }
 
 function parseDate(dateStr: string): Date {
@@ -51,7 +53,8 @@ function rowToFoto(row: any[]): Foto | null {
 }
 
 export async function getEventos(when?: 'hoje' | 'antes' | 'depois', query?: string): Promise<Evento[]> {
-  const rows = await readSheetData(SPREADSHEET_ID!, 'Eventos!A2:G');
+  const spreadsheetId = getSpreadsheetId();
+  const rows = await readSheetData(spreadsheetId, 'Eventos!A2:G');
   const eventos = rows.map(rowToEvento).filter((e): e is Evento => e !== null);
   
   let filtered = eventos;
@@ -91,18 +94,19 @@ export async function getEventoById(id: string): Promise<{
   arquivos: Arquivo[];
   fotos: Foto[];
 } | null> {
-  const eventosRows = await readSheetData(SPREADSHEET_ID!, 'Eventos!A2:G');
+  const spreadsheetId = getSpreadsheetId();
+  const eventosRows = await readSheetData(spreadsheetId, 'Eventos!A2:G');
   const eventos = eventosRows.map(rowToEvento).filter((e): e is Evento => e !== null);
   const evento = eventos.find(e => e.id === id);
   
   if (!evento) return null;
   
-  const arquivosRows = await readSheetData(SPREADSHEET_ID!, 'Arquivos!A2:F');
+  const arquivosRows = await readSheetData(spreadsheetId, 'Arquivos!A2:F');
   const arquivos = arquivosRows
     .map(rowToArquivo)
     .filter((a): a is Arquivo => a !== null && a.eventoId === id);
   
-  const fotosRows = await readSheetData(SPREADSHEET_ID!, 'Fotos!A2:D');
+  const fotosRows = await readSheetData(spreadsheetId, 'Fotos!A2:D');
   const fotos = fotosRows
     .map(rowToFoto)
     .filter((f): f is Foto => f !== null && f.eventoId === id);
@@ -111,7 +115,8 @@ export async function getEventoById(id: string): Promise<{
 }
 
 export async function incrementViewCount(arquivoId: string, userEmail: string): Promise<void> {
-  const rows = await readSheetData(SPREADSHEET_ID!, 'Arquivos!A2:F');
+  const spreadsheetId = getSpreadsheetId();
+  const rows = await readSheetData(spreadsheetId, 'Arquivos!A2:F');
   const arquivos = rows.map(rowToArquivo).filter((a): a is Arquivo => a !== null);
   const arquivo = arquivos.find(a => a.id === arquivoId);
   
@@ -126,7 +131,7 @@ export async function incrementViewCount(arquivoId: string, userEmail: string): 
   const client = await sheets;
   
   await client.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID!,
+    spreadsheetId,
     range: `Arquivos!F${rowIndex}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
@@ -135,7 +140,7 @@ export async function incrementViewCount(arquivoId: string, userEmail: string): 
   });
   
   const timestamp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  await appendSheetData(SPREADSHEET_ID!, 'Logs!A:E', [[
+  await appendSheetData(spreadsheetId, 'Logs!A:E', [[
     timestamp,
     arquivo.eventoId,
     arquivoId,
@@ -144,8 +149,15 @@ export async function incrementViewCount(arquivoId: string, userEmail: string): 
   ]]);
 }
 
+export async function getArquivos(): Promise<Arquivo[]> {
+  const spreadsheetId = getSpreadsheetId();
+  const rows = await readSheetData(spreadsheetId, 'Arquivos!A2:F');
+  return rows.map(rowToArquivo).filter((a): a is Arquivo => a !== null);
+}
+
 export async function getLogs(): Promise<Log[]> {
-  const rows = await readSheetData(SPREADSHEET_ID!, 'Logs!A2:E');
+  const spreadsheetId = getSpreadsheetId();
+  const rows = await readSheetData(spreadsheetId, 'Logs!A2:E');
   
   return rows.map(row => ({
     timestamp: row[0] || '',
@@ -157,8 +169,9 @@ export async function getLogs(): Promise<Log[]> {
 }
 
 export async function getStatusData() {
+  const spreadsheetId = getSpreadsheetId();
   const eventos = await getEventos();
-  const arquivosRows = await readSheetData(SPREADSHEET_ID!, 'Arquivos!A2:F');
+  const arquivosRows = await readSheetData(spreadsheetId, 'Arquivos!A2:F');
   const arquivos = arquivosRows.map(rowToArquivo).filter((a): a is Arquivo => a !== null);
   const logs = await getLogs();
   

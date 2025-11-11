@@ -14,30 +14,45 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useQuery<AuthUser | null>({
-    queryKey: ['/api/auth/me'],
+    queryKey: ['/api', 'auth', 'me'],
     retry: false,
     staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (res.status === 401) return null;
+      if (!res.ok) throw new Error('Failed to fetch user');
+      return res.json();
+    },
   });
 
   const loginMutation = useMutation({
     mutationFn: async (idToken: string) => {
-      const response = await apiRequest('/api/auth/google', {
+      const response = await fetch('/api/auth/google', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
+        credentials: 'include',
       });
-      return response;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Authentication failed');
+      }
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api', 'auth', 'me'] });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include',
+      });
     },
     onSuccess: () => {
-      queryClient.setQueryData(['/api/auth/me'], null);
+      queryClient.setQueryData(['/api', 'auth', 'me'], null);
       queryClient.clear();
     },
   });

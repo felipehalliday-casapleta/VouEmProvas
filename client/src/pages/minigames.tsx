@@ -1,51 +1,24 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { ArquivoCard } from "@/components/arquivo-card"
 import { SearchBar } from "@/components/search-bar"
 import { EmptyState } from "@/components/empty-state"
 import { Gamepad2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Arquivo } from "@shared/schema"
 
 export default function MiniGamesPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { toast } = useToast()
   
-  // TODO: Remove mock data - replace with actual API call
-  const mockGames = [
-    {
-      fileId: "game-001",
-      tipoDocumento: "MiniGame",
-      versao: "1.0",
-      viewCount: 412,
-      eventName: "ENEM 2024 - Quiz Interativo"
-    },
-    {
-      fileId: "game-002",
-      tipoDocumento: "MiniGame",
-      versao: "2.0",
-      viewCount: 287,
-      eventName: "Vestibular - Jogo de Perguntas"
-    },
-    {
-      fileId: "game-003",
-      tipoDocumento: "MiniGame",
-      versao: "1.3",
-      viewCount: 195,
-      eventName: "OAB - Simulador de Provas"
-    }
-  ]
+  const { data: allArquivos = [], isLoading } = useQuery<Arquivo[]>({
+    queryKey: ['/api', 'arquivos'],
+  })
 
-  const filteredGames = mockGames.filter(game =>
-    game.eventName.toLowerCase().includes(searchQuery.toLowerCase())
+  const games = allArquivos.filter(arquivo => arquivo.tipo === 'MiniGame')
+
+  const filteredGames = games.filter(game =>
+    game.nome.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const handleVisualize = (fileId: string) => {
-    // TODO: Remove mock functionality - implement actual API call
-    console.log('Visualizar game:', fileId)
-    toast({
-      title: "Abrindo minigame",
-      description: "O minigame será aberto em uma nova aba.",
-    })
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,22 +33,34 @@ export default function MiniGamesPage() {
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Buscar minigames..."
+            data-testid="input-search"
           />
         </div>
 
-        {filteredGames.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-40" data-testid={`skeleton-game-${i}`} />
+            ))}
+          </div>
+        ) : filteredGames.length === 0 ? (
           <EmptyState
             icon={Gamepad2}
             title="Nenhum minigame encontrado"
-            description="Não há minigames correspondentes à sua busca."
+            description={searchQuery
+              ? "Não há minigames correspondentes à sua busca."
+              : "Não há minigames disponíveis no momento."}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredGames.map((game) => (
               <ArquivoCard
-                key={game.fileId}
-                {...game}
-                onVisualize={() => handleVisualize(game.fileId)}
+                key={game.id}
+                id={game.id}
+                nome={game.nome}
+                tipo={game.tipo}
+                viewUrl={game.viewUrl}
+                viewCount={game.viewCount}
               />
             ))}
           </div>

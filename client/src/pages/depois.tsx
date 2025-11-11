@@ -1,49 +1,27 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { EventCard } from "@/components/event-card"
 import { SearchBar } from "@/components/search-bar"
 import { FilterChips } from "@/components/filter-chips"
 import { EmptyState } from "@/components/empty-state"
 import { ChevronRight } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Evento } from "@shared/schema"
 
 export default function DepoisPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
   
-  // TODO: Remove mock data - replace with actual API call
-  const mockEvents = [
-    {
-      eventId: "evt-201",
-      nome: "ENEM 2024 - Segundo Dia",
-      tipo: "ENEM",
-      genero: "Educação",
-      data: "10/11/2024",
-      local: "Todo Brasil",
-      status: "Agendado"
-    },
-    {
-      eventId: "evt-202",
-      nome: "Vestibular USP 2025 - 1ª Fase",
-      tipo: "Vestibular",
-      genero: "Educação",
-      data: "24/11/2024",
-      local: "São Paulo, SP",
-      status: "Agendado"
-    },
-    {
-      eventId: "evt-203",
-      nome: "Concurso INSS - Prova Objetiva",
-      tipo: "Concurso",
-      genero: "Público",
-      data: "15/12/2024",
-      local: "Nacional"
-    }
-  ]
+  const { data: eventos = [], isLoading } = useQuery<Evento[]>({
+    queryKey: ['/api/eventos?when=depois'],
+  })
 
-  const allTipos = Array.from(new Set(mockEvents.map(e => e.tipo)))
+  const allTipos = Array.from(new Set(eventos.map(e => e.tipo).filter(Boolean)))
 
-  const filteredEvents = mockEvents.filter(event => {
-    const matchesSearch = event.nome.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFilter = selectedFilters.length === 0 || selectedFilters.includes(event.tipo)
+  const filteredEvents = eventos.filter(event => {
+    const matchesSearch = event.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.descricao?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesFilter = selectedFilters.length === 0 || (event.tipo && selectedFilters.includes(event.tipo))
     return matchesSearch && matchesFilter
   })
 
@@ -60,6 +38,7 @@ export default function DepoisPage() {
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Buscar eventos futuros..."
+            data-testid="input-search"
           />
           
           {allTipos.length > 0 && (
@@ -74,16 +53,32 @@ export default function DepoisPage() {
           )}
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-48" data-testid={`skeleton-event-${i}`} />
+            ))}
+          </div>
+        ) : filteredEvents.length === 0 ? (
           <EmptyState
             icon={ChevronRight}
             title="Nenhum evento encontrado"
-            description="Não há eventos futuros correspondentes aos filtros."
+            description={searchQuery || selectedFilters.length > 0
+              ? "Tente ajustar seus filtros de busca"
+              : "Não há eventos futuros correspondentes aos filtros."}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
-              <EventCard key={event.eventId} {...event} />
+              <EventCard
+                key={event.id}
+                eventId={event.id}
+                nome={event.nome}
+                tipo={event.tipo}
+                data={event.data}
+                local={event.local}
+                status={event.status}
+              />
             ))}
           </div>
         )}

@@ -2,19 +2,42 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FileText, Video, Gamepad2, Eye } from "lucide-react"
+import { useMutation } from "@tanstack/react-query"
+import { apiRequest, queryClient } from "@/lib/queryClient"
+import { useToast } from "@/hooks/use-toast"
 
 export interface ArquivoCardProps {
-  fileId: string
-  tipoDocumento: string
-  versao?: string
+  id: string
+  nome: string
+  tipo: string
+  viewUrl: string
   viewCount: number
-  onVisualize: () => void
 }
 
-export function ArquivoCard({ fileId, tipoDocumento, versao, viewCount, onVisualize }: ArquivoCardProps) {
+export function ArquivoCard({ id, nome, tipo, viewUrl, viewCount }: ArquivoCardProps) {
+  const { toast } = useToast()
+  
+  const viewMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/arquivos/${id}/view`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api', 'arquivos'] })
+      queryClient.invalidateQueries({ queryKey: ['/api', 'eventos'] })
+      window.open(viewUrl, '_blank')
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao abrir arquivo",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
+  })
+  
   const getIcon = () => {
-    if (tipoDocumento.includes("Video")) return Video
-    if (tipoDocumento.includes("MiniGame")) return Gamepad2
+    if (tipo === "Video") return Video
+    if (tipo === "MiniGame") return Gamepad2
     return FileText
   }
 
@@ -29,14 +52,12 @@ export function ArquivoCard({ fileId, tipoDocumento, versao, viewCount, onVisual
           </div>
           
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium line-clamp-2 mb-2">{tipoDocumento}</p>
+            <p className="text-sm font-medium line-clamp-2 mb-2">{nome}</p>
             
             <div className="flex flex-wrap gap-2 mb-3">
-              {versao && (
-                <Badge variant="outline" className="text-xs">
-                  v{versao}
-                </Badge>
-              )}
+              <Badge variant="outline" className="text-xs">
+                {tipo}
+              </Badge>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Eye className="h-3 w-3" />
                 <span>{viewCount}</span>
@@ -46,10 +67,11 @@ export function ArquivoCard({ fileId, tipoDocumento, versao, viewCount, onVisual
             <Button 
               size="sm" 
               className="w-full"
-              onClick={onVisualize}
-              data-testid={`button-visualizar-${fileId}`}
+              onClick={() => viewMutation.mutate()}
+              disabled={viewMutation.isPending}
+              data-testid={`button-visualizar-${id}`}
             >
-              Visualizar
+              {viewMutation.isPending ? "Abrindo..." : "Visualizar"}
             </Button>
           </div>
         </div>
