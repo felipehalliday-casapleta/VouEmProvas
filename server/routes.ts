@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { verifyGoogleToken, getUserRole, createJWT, requireAuth, requireRole } from "./auth";
-import * as sheetsService from "./sheets-service";
+import * as sheetsService from "./sheets";
 
 const ENABLE_AUTOMATION = process.env.ENABLE_AUTOMATION === 'true';
 
