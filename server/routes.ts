@@ -95,6 +95,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get("/api/health", async (req, res) => {
+    try {
+      const testData = await sheetsService.getEventos();
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        sheetsConnection: 'ok',
+        eventosCount: testData.length,
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        sheetsConnection: 'failed',
+        error: error.message,
+      });
+    }
+  });
+
   app.get("/api/status", requireAuth, requireRole('admin'), async (req, res) => {
     try {
       const statusData = await sheetsService.getStatusData();

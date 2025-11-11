@@ -115,10 +115,10 @@ Preferred communication style: Simple, everyday language.
 
 **Primary Data Source**: Google Sheets via Google Sheets API v4
 
-**Integration Method**: Replit Connectors with OAuth token management
-- Automatic token refresh handling
-- Connection settings cached until expiration
-- Access token retrieval via Replit's connector API
+**Integration Method**: Google Service Account with JWT authentication
+- Direct API access using googleapis library
+- Service Account credentials managed via environment variables
+- Automatic authentication with private key
 
 **Sheet Structure** (4 tabs):
 1. **Eventos** - Event metadata (ID, name, date, type, genre, location, status, DataISO for filtering)
@@ -160,10 +160,10 @@ Preferred communication style: Simple, everyday language.
 - Backend verifies tokens with `google-auth-library`
 
 **Google Sheets API**: Primary database via Sheets API v4
-- Accessed through Replit Connectors integration
-- Requires `GOOGLE_SHEET_ID` environment variable
-- Sheet must be shared with service account as Editor
-- Connection managed via `REPLIT_CONNECTORS_HOSTNAME` and identity tokens
+- Accessed through Service Account authentication
+- Requires `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+- Sheet must be shared with Service Account email as Editor
+- Uses `googleapis` library with JWT authentication
 
 ### Key NPM Packages
 
@@ -195,15 +195,13 @@ Preferred communication style: Simple, everyday language.
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID (for backend verification)
 - `VITE_GOOGLE_CLIENT_ID` - Google OAuth client ID (for frontend Google Sign-In)
 - `GOOGLE_SHEET_ID` - Target spreadsheet ID
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` - Service Account email for Sheets access
+- `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` - Service Account private key (JSON format)
 - `JWT_SECRET` - Secret for signing JWT tokens (defaults to dev secret if not set)
 - `ROLE_MAP` - JSON mapping emails to roles (defaults to {} if not set)
 - `ENABLE_AUTOMATION` - Feature flag, set to "false" (no automation/webhooks)
 - `TZ` - Timezone set to America/Sao_Paulo
 - `NODE_ENV` - Environment flag (development/production)
-
-**Replit-Specific**:
-- `REPL_IDENTITY` or `WEB_REPL_RENEWAL` - Authentication for connector API
-- `REPLIT_CONNECTORS_HOSTNAME` - Connector service endpoint
 
 ### Deployment Architecture
 
