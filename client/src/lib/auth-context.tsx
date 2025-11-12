@@ -60,6 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (idToken: string) => {
     await loginMutation.mutateAsync(idToken);
   };
+  
+  useEffect(() => {
+    const onToken = (e: any) => login(e.detail);
+    window.addEventListener('gsi-token', onToken);
+    return () => window.removeEventListener('gsi-token', onToken);
+  }, []);
 
   const logout = async () => {
     await logoutMutation.mutateAsync();
