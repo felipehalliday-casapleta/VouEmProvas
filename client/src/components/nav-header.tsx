@@ -104,6 +104,16 @@ export function NavHeader() {
                   <Search className="h-5 w-5" />
                   <span className="text-base">Busca</span>
                 </Button>
+                <div className="border-t my-2" />
+                <Button
+                  variant="ghost"
+                  className="justify-start gap-3 h-12 text-destructive hover:text-destructive"
+                  onClick={handleLogout}
+                  data-testid="mobile-nav-logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span className="text-base">Sair</span>
+                </Button>
               </nav>
             </SheetContent>
           </Sheet>
