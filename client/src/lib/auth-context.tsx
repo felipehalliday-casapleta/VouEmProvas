@@ -67,6 +67,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('gsi-token', onToken);
   }, []);
 
+  useEffect(() => {
+    // se não logado, abre o One Tap
+    if (!isLoading && !user && (window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: (res: any) => login(res.credential),
+      });
+      (window as any).google.accounts.id.prompt(); // mostra o diálogo
+    }
+  }, [isLoading, user]);
+  
   const logout = async () => {
     await logoutMutation.mutateAsync();
   };

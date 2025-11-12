@@ -14,7 +14,16 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; img-src 'self' data: https:;"
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
+      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: https:",
+      "connect-src 'self' https://accounts.google.com",
+      "frame-src https://accounts.google.com"
+    ].join('; ')
   );
   next();
 });

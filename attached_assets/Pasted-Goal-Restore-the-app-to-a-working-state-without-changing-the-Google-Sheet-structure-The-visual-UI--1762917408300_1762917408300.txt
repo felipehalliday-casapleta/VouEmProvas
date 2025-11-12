@@ -1,0 +1,44 @@
+Goal: Restore the app to a working state without changing the Google Sheet structure. The visual/UI, navigation and pages you built before were good — keep them. Just fix login/rendering/routing and add a Logout in the existing side menu.
+
+Hard constraints (MUST):
+
+Do NOT change the spreadsheet schema or tab/column names. Use the existing mapping already in server/sheets.ts.
+
+Do NOT touch App Secrets (Service Account creds, ROLE_MAP, VITE_GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID, etc.). Use them as-is.
+
+Keep the existing UI/visual design and navigation. Minimal diffs only.
+
+What to do:
+
+Make Google Sign-In work on /login (GSI button), set cookie, and ensure /api/auth/me returns my user with the role from ROLE_MAP.
+
+Make the pages render again (no blank/black screen). /hoje should show content (even a simple placeholder if list is empty).
+
+Wire data using the current API field names coming from server/sheets.ts. If a component expects different names, adapt in the component, not in the backend or the sheet.
+
+Add a Logout action in the existing side menu that POSTs /api/auth/logout and redirects to /login.
+
+Spreadsheet schema (frozen):
+
+Eventos (A..M):
+A:ID, B:Nome, C:Data, D:Tipo, E:Genero, F:DataExibicao, G:VersaoDescritivo, H:CriadoEm, I:AtualizadoEm, J:Local, K:AnotacoesDaCriacao, L:Status, M:DataISO
+
+Arquivos (A..I):
+A:FileID, B:EventID, C:TipoDocumento, D:Versao, E:ViewURL, F:DriveId, G:Origem, H:ViewCount, I:AtualizadoEm
+
+Fotos (A..J):
+A:FotoID, B:EventID, C:DriveId, D:Ordem, E:Imagem, F:Descricao, G:CriadoEm, H:AtualizadoEm, I:Ativo, J:Credito
+
+Logs (A..E):
+A:LogID, B:FileID, C:EventID, D:UserEmail, E:ViewedAt
+Acceptance:
+
+/login shows the Google button; after login, /api/auth/me returns my user with correct role (from ROLE_MAP in Secrets).
+
+Navigating to /hoje shows a visible page (no blank screen).
+
+Data appears from /api/eventos without changing sheet columns.
+
+Logout in the side menu clears the session and returns to /login.
+
+Please explain briefly what you changed
