@@ -21,48 +21,46 @@ import BuscaPage from "@/pages/busca";
 function Router() {
   return (
     <Switch>
-      {/* login público */}
+      {/* público */}
       <Route path="/login" component={LoginPage} />
+      <Route path="/debug-evento" component={EventoDetailPage} />
 
-      {/* redireciona somente a raiz "/" para /hoje */}
-      <Route path="/">
-        <Redirect to="/hoje" />
-      </Route>
+      {/* protegido */}
+      <ProtectedRoute>
+        <NavHeader />
+        <Switch>
+          <Route path="/hoje" component={HojePage} />
+          <Route path="/antes" component={AntesPage} />
+          <Route path="/depois" component={DepoisPage} />
+          <Route path="/videos" component={VideosPage} />
+          <Route path="/minigames" component={MiniGamesPage} />
+          <Route path="/evento/:id" component={EventoDetailPage} />
+          <Route path="/status" component={StatusPage} />
+          <Route path="/busca" component={BuscaPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </ProtectedRoute>
 
-      {/* envolve todo o app autenticado para qualquer caminho (exceto /login) */}
-      <Route path="/:rest*">
-        <ProtectedRoute>
-          <NavHeader />
-          <Switch>
-            <Route path="/hoje" component={HojePage} />
-            <Route path="/antes" component={AntesPage} />
-            <Route path="/depois" component={DepoisPage} />
-            <Route path="/videos" component={VideosPage} />
-            <Route path="/minigames" component={MiniGamesPage} />
-            <Route path="/evento/:id" component={EventoDetailPage} />
-            <Route path="/status" component={StatusPage} />
-            <Route path="/busca" component={BuscaPage} />
-            <Route component={NotFound} />
-          </Switch>
-        </ProtectedRoute>
-      </Route>
+      {/* fallback final */}
+      <Route component={NotFound} />
     </Switch>
+
   );
 }
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider defaultTheme="dark">
-          <TooltipProvider>
-            <Router />
-            <Toaster />
-          </TooltipProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
-}
-
-export default App;
+  
+  function App() {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemeProvider defaultTheme="dark">
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+  }
+  
+  export default App;
