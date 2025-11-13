@@ -37,14 +37,26 @@ Preferred communication style: Simple, everyday language.
 - Spacing system based on Tailwind's standard scale (2, 4, 6, 8, 12, 16)
 
 **Key Pages**:
-- `/hoje` - Today's events
-- `/antes` - Past events
-- `/depois` - Future events
+- `/hoje` - Today's events (uses React Query for data fetching)
+- `/antes` - Past events (uses React Query for data fetching)
+- `/depois` - Future events (uses React Query for data fetching)
 - `/videos` - Video files filtered view
 - `/minigames` - MiniGame files filtered view
-- `/evento/:id` - Event detail page with files and photos
+- `/evento/:id` - Event detail page with full event info, files, photos, and status management
 - `/status` - System monitoring dashboard
 - `/busca` - Global search across events and files
+
+**Event Detail Page Features** (`/evento/:id`):
+- Fetches complete event data via React Query with `["/api/eventos", id]` query key
+- Displays full event metadata (name, type, genre, date, location, notes)
+- Color-coded status badge (green/orange/gray/red for different statuses)
+- Role-based status editing: admin/editor see Select dropdown, viewers see read-only Badge
+- Status changes trigger mutation with automatic cache invalidation
+- File listing with ArquivoCard components - clicking logs view and opens in new tab
+- Photo gallery with PhotoGrid component and lightbox viewer
+- Proper loading states with Skeleton components
+- EmptyState components for not found/empty data scenarios
+- Back button navigation using wouter Link component
 
 ### Backend Architecture
 
@@ -63,6 +75,7 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/auth/me` - Current user session
 - `GET /api/eventos` - List events with optional query parameters (`when=hoje|antes|depois`, `query=search`)
 - `GET /api/eventos/:id` - Event details with files and photos
+- `PATCH /api/eventos/:id/status` - Update event status (admin/editor only)
 - `GET /api/arquivos` - List all files
 - `POST /api/arquivos/:id/view` - Increment view count and log access
 - `GET /api/status` - System statistics and recent logs
@@ -128,7 +141,8 @@ Preferred communication style: Simple, everyday language.
 
 **Data Operations**:
 - **Read**: Fetch all rows from tabs, transform to typed objects
-- **Write**: Append logs to Logs tab, update view counts in Arquivos tab
+- **Write**: Append logs to Logs tab, update view counts in Arquivos tab, update event status in Eventos tab
+- **Row Index Calculation**: Critical fix implemented - row indices calculated from raw sheet rows before filtering to avoid writing to wrong rows
 - **Retry Logic**: Implemented for mutations with small backoff
 
 **Data Transformations**:
