@@ -1,146 +1,281 @@
-import { useRoute } from "wouter"
-import { useQuery } from "@tanstack/react-query"
-import { ArquivoCard } from "@/components/arquivo-card"
-import { PhotoGrid, type Photo } from "@/components/photo-grid"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeft, Calendar, MapPin, FileText } from "lucide-react"
-import type { Evento, Arquivo, Foto } from "@shared/schema"
+import { useRoute, Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { ArrowLeft, Calendar, MapPin, FileText, Image as ImageIcon, Tag } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ArquivoCard } from "@/components/arquivo-card";
+import { PhotoGrid, type Photo } from "@/components/photo-grid";
+import { EmptyState } from "@/components/empty-state";
+import type { Evento, Arquivo, Foto } from "@shared/schema";
+
+type EventoDetail = {
+  evento: Evento;
+  arquivos: Arquivo[];
+  fotos: Foto[];
+};
 
 export default function EventoDetailPage() {
-  const [, params] = useRoute("/evento/:id")
-  
-  const { data, isLoading } = useQuery<{ evento: Evento; arquivos: Arquivo[]; fotos: Foto[] }>({
-    queryKey: params?.id ? ['/api', 'eventos', params.id] : [],
-    enabled: !!params?.id,
-  })
+  const [, params] = useRoute("/evento/:id");
+  const id = params?.id || "";
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const photos: Photo[] = data?.fotos.map(foto => ({
-    fotoId: foto.id,
-    imagem: foto.url,
-    descricao: foto.caption,
-    ordem: 1,
-  })) || []
+  const { data, isLoading, error } = useQuery<EventoDetail>({
+    queryKey: ["/api/eventos", id],
+    enabled: !!id,
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      await apiRequest("PATCH", `/api/eventos/${id}/status`, { status: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eventos"] });
+      toast({
+        title: "Status atualizado",
+        description: "O status do evento foi atualizado com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case "Concluído":
+        return "bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30";
+      case "Em Andamento":
+        return "bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30";
+      case "Cancelado":
+        return "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30";
+      case "Planejado":
+      default:
+        return "bg-gray-500/20 text-gray-700 dark:text-gray-400 border-gray-500/30";
+    }
+  };
+
+  const canEditStatus = user?.role === "admin" || user?.role === "editor";
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Skeleton className="h-10 w-32 mb-6" />
-          <Skeleton className="h-64 mb-12" />
-          <Skeleton className="h-48" />
+      <main className="p-6 max-w-5xl mx-auto">
+        <div className="mb-6">
+          <Skeleton className="h-10 w-24 mb-4" />
+          <Skeleton className="h-8 w-96 mb-2" />
+          <Skeleton className="h-6 w-64" />
         </div>
-      </div>
-    )
+        <Skeleton className="h-64 w-full" />
+      </main>
+    );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Button 
-            variant="ghost" 
-            className="mb-6" 
-            onClick={() => window.history.back()}
-            data-testid="button-back"
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
+      <main className="p-6 max-w-5xl mx-auto">
+        <Link href="/hoje">
+          <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Evento não encontrado</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
+        </Link>
+        <EmptyState
+          icon={FileText}
+          title="Evento não encontrado"
+          description="O evento que você procura não existe ou foi removido."
+        />
+      </main>
+    );
   }
 
-  const { evento, arquivos } = data
+  const { evento, arquivos, fotos } = data;
+  const nomeCompleto = evento.versaoDescritivo
+    ? `${evento.nome} .${evento.versaoDescritivo}`
+    : evento.nome;
+
+  const photos: Photo[] = fotos.map((foto) => ({
+    fotoId: foto.id,
+    imagem: foto.url,
+    descricao: foto.caption,
+    credito: foto.credito,
+    ordem: parseInt(foto.ordem || "0", 10),
+  }));
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Button 
-          variant="ghost" 
-          className="mb-6" 
-          onClick={() => window.history.back()}
-          data-testid="button-back"
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
+    <main className="p-6 max-w-5xl mx-auto">
+      <Link href="/hoje">
+        <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
+          <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
+      </Link>
 
-        <Card className="mb-12">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-evento-nome">
+            {nomeCompleto}
+          </h1>
+          <div className="flex flex-wrap gap-2 items-center">
+            {evento.tipo && (
+              <Badge variant="secondary" data-testid={`badge-tipo-${evento.tipo}`}>
+                {evento.tipo}
+              </Badge>
+            )}
+            {evento.genero && (
+              <Badge variant="outline" data-testid={`badge-genero-${evento.genero}`}>
+                {evento.genero}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Card>
           <CardHeader>
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <CardTitle className="text-2xl">{evento.nome}</CardTitle>
-              {evento.status && (
-                <Badge variant="secondary" data-testid="badge-status">{evento.status}</Badge>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {evento.tipo && (
-                <Badge variant="default" data-testid="badge-tipo">{evento.tipo}</Badge>
-              )}
-            </div>
+            <CardTitle className="text-xl">Informações do Evento</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Data:</span>
-                <span data-testid="text-data">{evento.data}</span>
-              </div>
-              {evento.local && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Local:</span>
-                  <span data-testid="text-local">{evento.local}</span>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {evento.data && (
+                <div className="flex items-start gap-3" data-testid="info-data">
+                  <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Data de Gravação</p>
+                    <p className="text-sm text-muted-foreground">{evento.data}</p>
+                  </div>
                 </div>
               )}
-            </div>
-            {evento.descricao && (
-              <div className="mt-4 p-4 bg-muted rounded-md">
-                <p className="text-sm font-medium mb-1">Descrição:</p>
-                <p className="text-sm text-muted-foreground" data-testid="text-descricao">{evento.descricao}</p>
+
+              {evento.dataExibicao && (
+                <div className="flex items-start gap-3" data-testid="info-data-exibicao">
+                  <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Data de Exibição</p>
+                    <p className="text-sm text-muted-foreground">{evento.dataExibicao}</p>
+                  </div>
+                </div>
+              )}
+
+              {evento.local && (
+                <div className="flex items-start gap-3" data-testid="info-local">
+                  <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Local</p>
+                    <p className="text-sm text-muted-foreground">{evento.local}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-3" data-testid="info-status">
+                <Tag className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium mb-2">Status</p>
+                  {canEditStatus ? (
+                    <Select
+                      value={evento.status || "Planejado"}
+                      onValueChange={(value) => statusMutation.mutate(value)}
+                      disabled={statusMutation.isPending}
+                    >
+                      <SelectTrigger
+                        className={`w-full ${getStatusColor(evento.status)}`}
+                        data-testid="select-status"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Planejado">Planejado</SelectItem>
+                        <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                        <SelectItem value="Concluído">Concluído</SelectItem>
+                        <SelectItem value="Cancelado">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge className={getStatusColor(evento.status)} data-testid="badge-status">
+                      {evento.status || "Planejado"}
+                    </Badge>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {evento.anotacoesDaCriacao && (
+              <>
+                <Separator />
+                <div data-testid="info-anotacoes">
+                  <p className="text-sm font-medium mb-2">Anotações da Criação</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {evento.anotacoesDaCriacao}
+                  </p>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold mb-6">Arquivos</h2>
-          {arquivos.length === 0 ? (
-            <p className="text-muted-foreground text-sm" data-testid="text-no-arquivos">
-              Nenhum arquivo disponível.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {arquivos.map((arquivo) => (
-                <ArquivoCard
-                  key={arquivo.id}
-                  id={arquivo.id}
-                  nome={arquivo.nome}
-                  tipo={arquivo.tipo}
-                  viewUrl={arquivo.viewUrl}
-                  viewCount={arquivo.viewCount}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {arquivos.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Arquivos
+              </CardTitle>
+              <CardDescription>
+                Clique para visualizar e registrar acesso
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {arquivos.map((arquivo) => (
+                  <ArquivoCard
+                    key={arquivo.id}
+                    id={arquivo.id}
+                    nome={arquivo.nome || arquivo.tipo || "Arquivo"}
+                    tipo={arquivo.tipo}
+                    viewUrl={arquivo.viewUrl}
+                    viewCount={arquivo.viewCount}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {photos.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-xl font-semibold mb-6">Fotos</h2>
-            <PhotoGrid photos={photos} />
-          </div>
+        {fotos.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Fotos
+              </CardTitle>
+              <CardDescription>
+                {fotos.length} {fotos.length === 1 ? "foto" : "fotos"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PhotoGrid photos={photos} />
+            </CardContent>
+          </Card>
+        )}
+
+        {arquivos.length === 0 && fotos.length === 0 && (
+          <EmptyState
+            icon={FileText}
+            title="Nenhum arquivo ou foto"
+            description="Este evento ainda não possui arquivos ou fotos anexados."
+          />
         )}
       </div>
-    </div>
-  )
+    </main>
+  );
 }

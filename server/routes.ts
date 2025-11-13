@@ -71,6 +71,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/eventos/:id/status", requireAuth, requireRole("admin", "editor"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status) return res.status(400).json({ error: "Missing status" });
+      
+      const validStatuses = ['Planejado', 'Em Andamento', 'Concluído', 'Cancelado'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+      
+      await sheetsService.updateEventoStatus(id, status);
+      return res.json({ success: true });
+    } catch (e: any) {
+      return res
+        .status(500)
+        .json({ error: e?.message || "Failed to update status" });
+    }
+  });
+
   // --- Arquivos ---
   app.get("/api/arquivos", requireAuth, async (_req, res) => {
     try {

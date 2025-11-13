@@ -345,21 +345,48 @@ export async function appendLog(
 }
 
 export async function incrementViewCount(arquivoId: string, userEmail: string): Promise<void> {
-  // Carrega todos para achar o índice da linha do arquivo
+  // Carrega todas as linhas cruas
   const rows = await readSheetData('Arquivos!A2:I')
-  const arquivos = rows.map(rowToArquivo).filter((a): a is Arquivo => a !== null)
-  const arquivo = arquivos.find((a) => a.id === arquivoId)
+  
+  // Encontra o arquivo e índice na lista de linhas cruas (antes do filter)
+  let arquivo: Arquivo | null = null
+  let rowIndex = -1
+  for (let i = 0; i < rows.length; i++) {
+    const a = rowToArquivo(rows[i])
+    if (a && a.id === arquivoId) {
+      arquivo = a
+      rowIndex = i + 2  // +2 porque começa em A2 (row 2 na planilha)
+      break
+    }
+  }
 
-  if (!arquivo) throw new Error('Arquivo não encontrado')
-
-  // Índice relativo dentro do array + offset da 1a linha de dados (2)
-  const rowIndex = arquivos.findIndex((a) => a.id === arquivoId) + 2
+  if (!arquivo || rowIndex === -1) throw new Error('Arquivo não encontrado')
 
   // Coluna H (8ª, index humano) = ViewCount
   const newViewCount = (arquivo.viewCount || 0) + 1
   await updateSheetData(`Arquivos!H${rowIndex}`, [[newViewCount]])
 
   await appendLog(arquivo.eventoId, arquivoId, 'view', userEmail)
+}
+
+export async function updateEventoStatus(eventoId: string, newStatus: string): Promise<void> {
+  // Carrega todas as linhas cruas
+  const rows = await readSheetData('Eventos!A2:M')
+  
+  // Encontra o índice na lista de linhas cruas (antes do filter)
+  let rowIndex = -1
+  for (let i = 0; i < rows.length; i++) {
+    const evento = rowToEvento(rows[i])
+    if (evento && evento.id === eventoId) {
+      rowIndex = i + 2  // +2 porque começa em A2 (row 2 na planilha)
+      break
+    }
+  }
+
+  if (rowIndex === -1) throw new Error('Evento não encontrado')
+
+  // Coluna L (12ª, index humano) = Status
+  await updateSheetData(`Eventos!L${rowIndex}`, [[newStatus]])
 }
 
 // ---------- Dashboard / Status ----------

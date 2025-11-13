@@ -1,0 +1,16 @@
+The app is not working the way it should.
+ When I click on any event to see its details, the screen goes completely black and nothing appears. The page that should show the event information simply doesn’t open.
+Sometimes the event cards also don’t seem to take me to the right place. And the main pages (Today, Before, After) are loading slower than before.
+Nothing on the backend needs changing — the data is there. The problem is only on the part the user sees: the event detail page is broken, the navigation from the cards is failing, and the main lists need to load normally again.
+I just need these screens to work properly so the app can be used.
+Reinforcing the structure of the app: It is organized into three main display modes: Today – a list with all events that will take place on the current date; Before – past events; After – future events. Each event appears as a card in the list, showing basic and essential information such as: Name (with the descriptive version separated by a dot, e.g., CELEIRO AO ALVO .v1), Type, Genre, Date, Location, and a small button that can change color: green (approved event), orange (pending approval), or red (rejected event).
+When the user clicks a card in the list, they navigate to a detailed page for that event, which shows additional information such as recording date, airing date, approval status (the colored button, now with the status text displayed on it), and creation notes. The Details page also displays files related to the event (e.g., Descritivo, Gabarito, Roteiro, Video Summary, etc.). Each file click generates a log entry in a specific tab in the Google Sheets database.
+Events are classified in the spreadsheet using the following types: FAZENDEIRO, PROVA DE FOGO, ATIVIDADE, FESTA, GAME, AÇÃO MERCHAN. Whenever a user clicks a file inside the event details page, the log is recorded and the file opens in a new tab.
+Keep the side menu structure.
+ Keep the System Status page functional, but only visible to Admin.
+ Admins and Editors must be able to approve events inside the app directly from the event details page.
+
+Do not modify environment variables, credentials, or Google Sheets structure.
+ (The backend API must remain untouched and functional.)
+All date handling uses the timezone America/Sao_Paulo. (DataISO)
+Do not change the Sheets logic, ingestion logic, or file logging logic.

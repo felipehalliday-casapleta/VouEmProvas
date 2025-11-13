@@ -21,14 +21,19 @@ import BuscaPage from "@/pages/busca";
 function Router() {
   return (
     <Switch>
+      {/* login público */}
       <Route path="/login" component={LoginPage} />
+
+      {/* redireciona somente a raiz "/" para /hoje */}
       <Route path="/">
+        <Redirect to="/hoje" />
+      </Route>
+
+      {/* envolve todo o app autenticado para qualquer caminho (exceto /login) */}
+      <Route path="/:rest*">
         <ProtectedRoute>
           <NavHeader />
           <Switch>
-            <Route path="/">
-              <Redirect to="/hoje" />
-            </Route>
             <Route path="/hoje" component={HojePage} />
             <Route path="/antes" component={AntesPage} />
             <Route path="/depois" component={DepoisPage} />
