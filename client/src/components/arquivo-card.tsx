@@ -6,11 +6,11 @@ import { useToast } from "@/hooks/use-toast"
 
 export interface ArquivoCardProps {
   id: string
-  nome: string            // ainda existe na API, mas não usamos na UI
-  tipo: string            // aqui vem o TipoDocumento: Descritivo, Gabarito, etc.
+  nome?: string          // pode vir o nome da prova ou do arquivo
+  tipo?: string          // TipoDocumento: Descritivo, Gabarito, MiniGame, etc.
   viewUrl: string
   viewCount: number
-  canViewStats?: boolean  // true só para admin
+  canViewStats?: boolean // true só para admin
 }
 
 export function ArquivoCard({
@@ -25,12 +25,17 @@ export function ArquivoCard({
 
   const viewMutation = useMutation({
     mutationFn: async () => {
+      // registra visualização na planilha
       await apiRequest("POST", `/api/arquivos/${id}/view`)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api', 'arquivos'] })
-      queryClient.invalidateQueries({ queryKey: ['/api', 'eventos'] })
-      window.open(viewUrl, '_blank')
+      // atualiza caches
+      queryClient.invalidateQueries({ queryKey: ["/api", "arquivos"] })
+      queryClient.invalidateQueries({ queryKey: ["/api", "eventos"] })
+
+      if (viewUrl) {
+        window.open(viewUrl, "_blank")
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -38,7 +43,7 @@ export function ArquivoCard({
         description: error.message,
         variant: "destructive",
       })
-    }
+    },
   })
 
   const handleClick = () => {
@@ -57,8 +62,12 @@ export function ArquivoCard({
     return FileText
   }
 
-
   const Icon = getIcon()
+
+  // Linha principal: nome da prova/arquivo; fallback para tipo; fallback para "Arquivo"
+  const primaryLabel = nome || tipo || "Arquivo"
+  const secondaryLabel =
+    nome && tipo && nome !== tipo ? tipo : undefined
 
   return (
     <Card
@@ -74,10 +83,17 @@ export function ArquivoCard({
           </div>
 
           <div className="flex-1 min-w-0">
-            {/* Título = TipoDocumento (Descritivo, Gabarito, Roteiro, etc.) */}
+            {/* Título principal */}
             <p className="text-sm font-medium truncate">
-              {tipo}
+              {primaryLabel}
             </p>
+
+            {/* Subtítulo opcional (ex.: "MiniGame", "Descritivo") */}
+            {secondaryLabel && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                {secondaryLabel}
+              </p>
+            )}
 
             {/* Olhinho + contagem — só ADMIN vê */}
             {canViewStats && (
