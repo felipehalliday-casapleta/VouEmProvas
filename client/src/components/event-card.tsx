@@ -11,6 +11,7 @@ export type EventCardProps = {
   dataISO?: string | null;
   local?: string | null;
   status?: string | null;
+  versaoDescritivo?: string | null;
 };
 
 export function EventCard({
@@ -21,12 +22,17 @@ export function EventCard({
   dataISO,
   local,
   status,
+  versaoDescritivo
 }: EventCardProps) {
+  const nomeCompleto = versaoDescritivo
+  ? `${nome} v${versaoDescritivo}`
+  : nome;
+
   return (
     <Link href={`/evento/${encodeURIComponent(eventId)}`} className="block">
       <Card className="h-full hover:shadow-md transition-shadow" data-testid={`card-evento-${eventId}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg line-clamp-2">{nome}</CardTitle>
+          <CardTitle className="text-lg line-clamp-2">{nomeCompleto}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex flex-wrap items-center gap-2">

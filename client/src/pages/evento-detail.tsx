@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, MapPin, FileText, Image as ImageIcon, Tag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,16 @@ type EventoDetail = {
 };
 
 export default function EventoDetailPage() {
+  const [, navigate] = useLocation();
+
+  function handleBack() {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate("/hoje");
+    }
+  }
+
   const [, params] = useRoute("/evento/:id");
   const id = params?.id || "";
   const { user } = useAuth();
@@ -55,19 +65,21 @@ export default function EventoDetailPage() {
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case "Concluído":
+      case "Aprovado":
         return "bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30";
-      case "Em Andamento":
+      case "Pendente":
         return "bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30";
-      case "Cancelado":
+      case "Recusado":
         return "bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30";
-      case "Planejado":
+      case "Em Andamento":
       default:
         return "bg-gray-500/20 text-gray-700 dark:text-gray-400 border-gray-500/30";
     }
   };
 
   const canEditStatus = user?.role === "admin" || user?.role === "editor";
+  const canViewStats = user?.role === "admin";
+
 
   if (isLoading) {
     return (
@@ -85,12 +97,16 @@ export default function EventoDetailPage() {
   if (error || !data) {
     return (
       <main className="p-6 max-w-5xl mx-auto">
-        <Link href="/hoje">
-          <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-6"
+          data-testid="button-back"
+          onClick={handleBack}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
         <EmptyState
           icon={FileText}
           title="Evento não encontrado"
@@ -102,7 +118,7 @@ export default function EventoDetailPage() {
 
   const { evento, arquivos, fotos } = data;
   const nomeCompleto = evento.versaoDescritivo
-    ? `${evento.nome} .${evento.versaoDescritivo}`
+    ? `${evento.nome} v${evento.versaoDescritivo}`
     : evento.nome;
 
   const photos: Photo[] = fotos.map((foto) => ({
@@ -115,12 +131,16 @@ export default function EventoDetailPage() {
 
   return (
     <main className="p-6 max-w-5xl mx-auto">
-      <Link href="/hoje">
-        <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-      </Link>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mb-6"
+        data-testid="button-back"
+        onClick={handleBack}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Voltar
+      </Button>
 
       <div className="space-y-6">
         <div>
@@ -142,16 +162,13 @@ export default function EventoDetailPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Informações do Evento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
             <div className="grid gap-4 sm:grid-cols-2">
               {evento.data && (
                 <div className="flex items-start gap-3" data-testid="info-data">
                   <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Data de Gravação</p>
+                    <p className="text-sm font-medium">Grava</p>
                     <p className="text-sm text-muted-foreground">{evento.data}</p>
                   </div>
                 </div>
@@ -161,7 +178,7 @@ export default function EventoDetailPage() {
                 <div className="flex items-start gap-3" data-testid="info-data-exibicao">
                   <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Data de Exibição</p>
+                    <p className="text-sm font-medium">Exibe</p>
                     <p className="text-sm text-muted-foreground">{evento.dataExibicao}</p>
                   </div>
                 </div>
@@ -183,7 +200,7 @@ export default function EventoDetailPage() {
                   <p className="text-sm font-medium mb-2">Status</p>
                   {canEditStatus ? (
                     <Select
-                      value={evento.status || "Planejado"}
+                      value={evento.status || "Em Andamento"}
                       onValueChange={(value) => statusMutation.mutate(value)}
                       disabled={statusMutation.isPending}
                     >
@@ -194,15 +211,15 @@ export default function EventoDetailPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Planejado">Planejado</SelectItem>
                         <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                        <SelectItem value="Concluído">Concluído</SelectItem>
-                        <SelectItem value="Cancelado">Cancelado</SelectItem>
+                        <SelectItem value="Pendente">Pendente</SelectItem>
+                        <SelectItem value="Aprovado">Aprovado</SelectItem>
+                        <SelectItem value="Recusado">Recusado</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
                     <Badge className={getStatusColor(evento.status)} data-testid="badge-status">
-                      {evento.status || "Planejado"}
+                      {evento.status || "Em Andamento"}
                     </Badge>
                   )}
                 </div>
@@ -225,16 +242,7 @@ export default function EventoDetailPage() {
 
         {arquivos.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Arquivos
-              </CardTitle>
-              <CardDescription>
-                Clique para visualizar e registrar acesso
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {arquivos.map((arquivo) => (
                   <ArquivoCard
@@ -244,6 +252,7 @@ export default function EventoDetailPage() {
                     tipo={arquivo.tipo}
                     viewUrl={arquivo.viewUrl}
                     viewCount={arquivo.viewCount}
+                    canViewStats={canViewStats}
                   />
                 ))}
               </div>

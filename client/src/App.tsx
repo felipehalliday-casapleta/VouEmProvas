@@ -41,26 +41,30 @@ function Router() {
         </Switch>
       </ProtectedRoute>
 
+      {/* raiz -> login (precisa vir antes do NotFound final) */}
+      <Route path="/">
+        <Redirect to="/login" />
+      </Route>
+
       {/* fallback final */}
       <Route component={NotFound} />
     </Switch>
-
   );
 }
-  
-  function App() {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ThemeProvider defaultTheme="dark">
-            <TooltipProvider>
-              <Router />
-              <Toaster />
-            </TooltipProvider>
-          </ThemeProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    );
-  }
-  
-  export default App;
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="dark">
+          <TooltipProvider>
+            <Router />
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

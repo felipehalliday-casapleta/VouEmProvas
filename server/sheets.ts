@@ -122,7 +122,7 @@ function rowToEvento(row: any[]): Evento | null {
     nome: B,
     data: C,            // preserva campo legado
     descricao: '',      // se você tiver uma coluna de descrição, mapeie aqui
-    status: (L as any) || 'Planejado',
+    status: (L as any) || 'Em Andamento',
     tipo: D,
     local: J,
   }
@@ -398,7 +398,6 @@ export async function getStatusData() {
 
   const totalViews = arquivos.reduce((sum, a) => sum + (a.viewCount || 0), 0)
 
-  // Mantém contadores por tipo para compat com o admin atual
   const videoCount = arquivos.filter((a) => safeLower((a as any).tipo) === 'video').length
   const miniGameCount = arquivos.filter((a) => safeLower((a as any).tipo) === 'minigame').length
 
@@ -408,6 +407,13 @@ export async function getStatusData() {
     totalViews,
     videoCount,
     miniGameCount,
-    recentLogs: logs.slice(-20).reverse(),
+
+    recentLogs: logs.slice(-20).reverse().map(log => {
+      const ev = eventos.find(e => e.id === log.eventoId);
+      return {
+        ...log,
+        eventoNome: ev?.nome || "—",
+      };
+    }),
   }
 }

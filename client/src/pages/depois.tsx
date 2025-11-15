@@ -54,6 +54,7 @@ export default function DepoisPage() {
               dataISO={e.dataISO ?? null}
               local={e.local ?? null}
               status={e.status ?? null}
+              versaoDescritivo={e.versaoDescritivo ?? null}
             />
           ))}
         </div>

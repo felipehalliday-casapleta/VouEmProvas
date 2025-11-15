@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!status) return res.status(400).json({ error: "Missing status" });
       
-      const validStatuses = ['Planejado', 'Em Andamento', 'Concluído', 'Cancelado'];
+      const validStatuses = ['Em Andamento', 'Pendente', 'Aprovado', 'Recusado'];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ error: "Invalid status value" });
       }

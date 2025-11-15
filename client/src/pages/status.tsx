@@ -143,7 +143,7 @@ export default function StatusPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Usuário</TableHead>
-                    <TableHead>Ação</TableHead>
+                    <TableHead>Nome</TableHead>
                     <TableHead>Data/Hora</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -153,8 +153,8 @@ export default function StatusPage() {
                       <TableCell className="font-mono text-sm" data-testid={`text-user-${index}`}>
                         {log.userEmail}
                       </TableCell>
-                      <TableCell className="text-sm" data-testid={`text-action-${index}`}>
-                        {log.action}
+                      <TableCell className="text-sm" data-testid={`text-eventoNome-${index}`}>
+                        {log.eventoNome}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground" data-testid={`text-timestamp-${index}`}>
                         {log.timestamp}

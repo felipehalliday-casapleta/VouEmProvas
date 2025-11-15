@@ -6,7 +6,7 @@ export const eventoSchema = z.object({
   data: z.string(), // legado (DD/MM/AAAA) — permanece
   descricao: z.string().optional(),
 
-  status: z.enum(['Planejado', 'Em Andamento', 'Concluído', 'Cancelado']).optional(),
+  status: z.enum(['Em Andamento', 'Pendente', 'Aprovado', 'Recusado']).optional(),
   tipo: z.string().optional(),
   local: z.string().optional(),
 
