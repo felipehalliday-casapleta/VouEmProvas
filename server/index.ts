@@ -8,23 +8,20 @@ process.env.TZ = 'America/Sao_Paulo';
 const app = express();
 
 app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader(
-    'Content-Security-Policy',
+    "Content-Security-Policy",
     [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://accounts.google.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
+      "default-src 'self' https://vouemprovas.casapletafilmes.com.br",
+      "connect-src 'self' https://vouemprovas.casapletafilmes.com.br https://accounts.google.com https://www.google.com",
+      "script-src 'self' https://accounts.google.com 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https:",
-      "connect-src 'self' https://accounts.google.com",
-      "frame-src https://accounts.google.com"
-    ].join('; ')
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self' https://accounts.google.com",
+      "object-src 'none'"
+    ].join("; ")
   );
   next();
 });
