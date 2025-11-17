@@ -1,7 +1,7 @@
 # Usar Node 20
 FROM node:20-alpine
 
-# Criar diretório de trabalho
+# Diretório de trabalho
 WORKDIR /app
 
 # Copiar pacotes
@@ -10,12 +10,15 @@ COPY package*.json ./
 # Instalar dependências
 RUN npm ci
 
-# Definir variáveis ANTES do build
+# Variáveis de ambiente
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Copiar todo o restante
+# Copiar todo o projeto (mas o Cloud Build pode ignorar dotfiles!)
 COPY . .
+
+# Garantir que o .env.production ENTRE no container
+COPY .env.production .env.production
 
 # Build do frontend/backend
 RUN npm run build
