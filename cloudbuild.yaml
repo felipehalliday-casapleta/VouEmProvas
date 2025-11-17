@@ -13,7 +13,15 @@ steps:
         '.'
       ]
 
-  # Deploy automático no Cloud Run
+  # Push da imagem para o Container Registry / Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'gcr.io/$PROJECT_ID/vouemprovas:$COMMIT_SHA'
+      ]
+
+  # Deploy no Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       [
