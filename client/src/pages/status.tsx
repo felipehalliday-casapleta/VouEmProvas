@@ -157,7 +157,7 @@ export default function StatusPage() {
                         {log.eventoNome}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground" data-testid={`text-timestamp-${index}`}>
-                        {log.timestamp}
+                        {new Date(log.timestamp).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                       </TableCell>
                     </TableRow>
                   ))}
