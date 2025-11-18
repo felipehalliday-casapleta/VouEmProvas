@@ -7,12 +7,15 @@ process.env.TZ = 'America/Sao_Paulo';
 
 const app = express();
 
+// ------------------
+// CONTENT SECURITY POLICY (CSP) – corrigida para domínio final
+// ------------------
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
     [
-      "default-src 'self' https://vouemprovas.casapletafilmes.com.br",
-      "connect-src 'self' https://vouemprovas.casapletafilmes.com.br https://accounts.google.com https://www.google.com",
+      "default-src 'self' https://vep.casapletafilmes.com.br",
+      "connect-src 'self' https://vep.casapletafilmes.com.br https://accounts.google.com https://www.google.com",
       "script-src 'self' https://accounts.google.com 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
@@ -26,6 +29,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// ------------------
+// RAW BODY SUPPORT (Google Auth signatures)
+// ------------------
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
@@ -40,6 +46,9 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// ------------------
+// API LOGGING
+// ------------------
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -70,6 +79,10 @@ app.use((req, res, next) => {
   next();
 });
 
+
+// ------------------
+// SERVER INIT
+// ------------------
 (async () => {
   const server = await registerRoutes(app);
 
@@ -81,25 +94,23 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Vite em desenvolvimento; arquivos estáticos em produção
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Cloud Run exige bind em PORT (ou 5000)
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  server.listen(
+    {
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    },
+    () => {
+      log(`serving on port ${port}`);
+    }
+  );
 })();
