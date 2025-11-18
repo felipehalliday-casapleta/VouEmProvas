@@ -408,7 +408,7 @@ export async function getStatusData() {
     videoCount,
     miniGameCount,
 
-    recentLogs: logs.slice(-20).reverse().map(log => {
+    recentLogs: logs.slice(-10).reverse().map(log => {
       const ev = eventos.find(e => e.id === log.eventoId);
       return {
         ...log,
