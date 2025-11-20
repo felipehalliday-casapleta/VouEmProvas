@@ -22,10 +22,12 @@ export default function AntesPage() {
   });
 
   const filtered = useMemo(
-    () => eventos.filter((e) => bucketByDateISO(e.dataISO) === "antes"),
-    .sort((a, b) => (b.dataISO ?? "").localeCompare(a.dataISO ?? "")),
-    [eventos]
-  );
+  () =>
+    eventos
+      .filter((e) => bucketByDateISO(e.dataISO) === "antes")
+      .sort((a, b) => (b.dataISO ?? "").localeCompare(a.dataISO ?? "")),
+  [eventos]
+);
 
   if (isLoading) {
     return (
