@@ -54,7 +54,7 @@ export default function VideosPage() {
     return tipoDoc.includes("vídeo") || tipoDoc.includes("video")
   })
 
-  // Filtro de busca pelo nome da prova OU nome do arquivo
+    // Filtro de busca pelo nome da prova OU nome do arquivo
   const filteredVideos = videos.filter(video => {
     const evento = eventos.find(e => e.id === (video as any).eventoId)
     const titulo =
@@ -63,6 +63,15 @@ export default function VideosPage() {
       ""
     return titulo.toLowerCase().includes(searchQuery.toLowerCase())
   })
+
+  // Ordenar do mais recente para o mais antigo, baseado na data do evento
+  const orderedVideos = filteredVideos.sort((a, b) => {
+    const eventoA = eventos.find(e => e.id === (a as any).eventoId)
+    const eventoB = eventos.find(e => e.id === (b as any).eventoId)
+
+    return (eventoB?.dataISO ?? "").localeCompare(eventoA?.dataISO ?? "")
+  })
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,7 +112,7 @@ export default function VideosPage() {
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredVideos.map(video => {
+            {orderedVideos.map(video => {
               const evento = eventos.find(e => e.id === (video as any).eventoId)
               const titulo =
                 evento?.nome ||
