@@ -2,6 +2,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getStatusColor, cn } from "@/lib/utils";
 
 export type EventCardProps = {
   eventId: string;
@@ -24,20 +25,35 @@ export function EventCard({
   status,
   versaoDescritivo
 }: EventCardProps) {
-  const nomeCompleto = versaoDescritivo
-  ? `${nome} v${versaoDescritivo}`
-  : nome;
+  const nomeCompleto =
+    versaoDescritivo ? `${nome} v${versaoDescritivo}` : nome;
 
   return (
     <Link href={`/evento/${encodeURIComponent(eventId)}`} className="block">
-      <Card className="h-full hover:shadow-md transition-shadow" data-testid={`card-evento-${eventId}`}>
+      <Card
+        className="h-full hover:shadow-md transition-shadow"
+        data-testid={`card-evento-${eventId}`}
+      >
         <CardHeader className="pb-2">
           <CardTitle className="text-lg line-clamp-2">{nomeCompleto}</CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-2 text-sm">
           <div className="flex flex-wrap items-center gap-2">
+            {/* Badge do tipo (mantém estilo original) */}
             {tipo && <Badge variant="secondary">{tipo}</Badge>}
-            {status && <Badge variant="outline">{status}</Badge>}
+
+            {/* Badge de status com cor dinâmica */}
+            {status && (
+              <span
+                className={cn(
+                  "px-2 py-1 rounded-md text-xs font-medium border",
+                  getStatusColor(status)
+                )}
+              >
+                {status}
+              </span>
+            )}
           </div>
 
           {(data || dataISO) && (
