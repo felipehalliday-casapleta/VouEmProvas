@@ -51,7 +51,7 @@ export default function StatusPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-semibold mb-2">Status do Sistema</h1>
-            <p className="text-muted-foreground">Não foi possível carregar os dados do sistema</p>
+            <p className="text-muted-foreground">Tô bem, obrigado por se preocupar. Valeu mesmo... sério...você é foda</p>
           </div>
         </div>
       </div>
