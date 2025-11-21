@@ -3,25 +3,48 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
-process.env.TZ = 'America/Sao_Paulo';
+process.env.TZ = "America/Sao_Paulo";
 
 const app = express();
 
-// ------------------
-// CONTENT SECURITY POLICY (CSP) – corrigida para domínio final
-// ------------------
+/* ------------------------------------------------------
+   CONTENT SECURITY POLICY (CSP) — versão 100% funcional
+   Compatível com:
+   - Google Identity Services (FedCM)
+   - Cloudflare proxy + insights
+   - React/Vite bundle
+------------------------------------------------------ */
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
     [
+      // Domínios base permitidos
       "default-src 'self' https://vep.casapletafilmes.com.br",
-      "connect-src 'self' https://vep.casapletafilmes.com.br https://accounts.google.com https://www.google.com",
-      "script-src 'self' https://accounts.google.com https://www.gstatic.com 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://www.gstatic.com",
-      "img-src 'self' data: https:",
-      "frame-src https://accounts.google.com",
+
+      // APIs permitidas: backend + Google
+      "connect-src 'self' https://vep.casapletafilmes.com.br https://accounts.google.com https://www.google.com https://www.gstatic.com https://apis.google.com",
+
+      // Scripts necessários
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
+        "https://accounts.google.com " +
+        "https://www.gstatic.com " +
+        "https://apis.google.com " +
+        "https://www.google.com " +
+        "https://static.cloudflareinsights.com",
+
+      // Estilos e fontes
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
+
+      // Imagens
+      "img-src 'self' data: https:",
+
+      // Iframes autorizados (Google login)
+      "frame-src https://accounts.google.com https://www.google.com",
+
+      // Ações de formulário
       "form-action 'self' https://accounts.google.com",
+
       "base-uri 'self'",
       "object-src 'none'"
     ].join("; ")
@@ -29,26 +52,28 @@ app.use((req, res, next) => {
   next();
 });
 
-// ------------------
-// RAW BODY SUPPORT (Google Auth signatures)
-// ------------------
-declare module 'http' {
+/* ------------------------------------------------------
+   RAW BODY SUPPORT (Google signature verification)
+------------------------------------------------------ */
+declare module "http" {
   interface IncomingMessage {
-    rawBody: unknown
+    rawBody: unknown;
   }
 }
 
 app.use(cookieParser());
-app.use(express.json({
-  verify: (req, _res, buf) => {
-    req.rawBody = buf;
-  }
-}));
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    }
+  })
+);
 app.use(express.urlencoded({ extended: false }));
 
-// ------------------
-// API LOGGING
-// ------------------
+/* ------------------------------------------------------
+   API LOGGING
+------------------------------------------------------ */
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -79,10 +104,9 @@ app.use((req, res, next) => {
   next();
 });
 
-
-// ------------------
-// SERVER INIT
-// ------------------
+/* ------------------------------------------------------
+   SERVER INIT
+------------------------------------------------------ */
 (async () => {
   const server = await registerRoutes(app);
 
@@ -94,20 +118,20 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Vite em desenvolvimento; arquivos estáticos em produção
+  // Vite (dev) / Static (prod)
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // Cloud Run exige bind em PORT (ou 5000)
-  const port = parseInt(process.env.PORT || '5000', 10);
+  // Cloud Run exige PORT
+  const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
+      reusePort: true
     },
     () => {
       log(`serving on port ${port}`);
