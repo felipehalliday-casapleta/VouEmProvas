@@ -140,12 +140,12 @@ export function requireRole(...allowedRoles: UserRole[]) {
 // ------- Utilitário opcional para emitir cookie JWT (use na rota /api/auth/google) -------
 export function buildAuthCookie(user: JWTPayload) {
   const token = createJWT(user);
-  // Em dev, Secure pode falhar em http; em replit.dev é https, então mantenha Secure.
   const cookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax' as const,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    sameSite: 'none' as const,
+    domain: '.casapletafilmes.com.br',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
   };
   return { token, cookieOptions };
