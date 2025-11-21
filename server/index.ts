@@ -23,7 +23,6 @@ app.use((req, res, next) => {
       "font-src 'self' https://fonts.gstatic.com",
       "form-action 'self' https://accounts.google.com",
       "base-uri 'self'",
-      "frame-ancestors 'none'",
       "object-src 'none'"
     ].join("; ")
   );
