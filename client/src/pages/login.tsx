@@ -6,9 +6,13 @@ import { useLocation } from "wouter";
 export default function LoginPage() {
   const { login } = useAuth();
   const btnRef = useRef<HTMLDivElement | null>(null);
+  const initialized = useRef(false);   // <-- impede inicializar 2x
   const [, navigate] = useLocation();
 
   useEffect(() => {
+    if (initialized.current) return;   // <-- proteção contra re-renderizações
+    initialized.current = true;
+
     const g = (window as any).google?.accounts?.id;
     if (!g) return;
 
@@ -16,7 +20,7 @@ export default function LoginPage() {
       client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
       callback: async (res: any) => {
         await login(res.credential);
-        window.location.href = "/hoje";   // redirecionamento confiável
+        window.location.href = "/hoje"; // mantém comportamento já existente
       },
     });
 
@@ -24,10 +28,10 @@ export default function LoginPage() {
       g.renderButton(btnRef.current, {
         theme: "outline",
         size: "large",
-        width: "100%",
+        width: 300,   // width deve ser número (Google recomenda)
       });
     }
-  }, [login, navigate]);
+  }, []); // <-- NUNCA depender de login/navigate aqui
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black px-4">
