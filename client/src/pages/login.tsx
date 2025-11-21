@@ -6,32 +6,44 @@ import { useLocation } from "wouter";
 export default function LoginPage() {
   const { login } = useAuth();
   const btnRef = useRef<HTMLDivElement | null>(null);
-  const initialized = useRef(false);   // <-- impede inicializar 2x
+  const initialized = useRef(false);
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (initialized.current) return;   // <-- proteção contra re-renderizações
+    if (initialized.current) return;
     initialized.current = true;
 
-    const g = (window as any).google?.accounts?.id;
-    if (!g) return;
+    /// 1) Carrega o script do Google manualmente
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
 
-    g.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: async (res: any) => {
-        await login(res.credential);
-        window.location.href = "/hoje"; // mantém comportamento já existente
-      },
-    });
+    script.onload = () => {
+      // 2) Inicializa GSI apenas quando o script estiver pronto
+      const g = (window as any).google?.accounts?.id;
+      if (!g) return;
 
-    if (btnRef.current) {
-      g.renderButton(btnRef.current, {
-        theme: "outline",
-        size: "large",
-        width: 300,   // width deve ser número (Google recomenda)
+      g.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: async (res: any) => {
+          await login(res.credential);
+          window.location.href = "/hoje";
+        },
       });
-    }
-  }, []); // <-- NUNCA depender de login/navigate aqui
+
+      // 3) Renderiza o botão somente depois do script carregar
+      if (btnRef.current) {
+        g.renderButton(btnRef.current, {
+          theme: "outline",
+          size: "large",
+          width: 300,
+        });
+      }
+    };
+
+    document.head.appendChild(script);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 to-black px-4">
