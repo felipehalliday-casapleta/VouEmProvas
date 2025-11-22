@@ -10,14 +10,14 @@ export function getStatusColor(status?: string) {
     case "Elaborando Proposta":
       return "bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30";
 
-    case "Em Análise (Diretoria de Provas)":
+    case "Em Análise (Direção de Provas)":
       return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30";
 
-    case "Aceito (Diretoria de Provas)":
+    case "Aceito (Direção de Provas)":
       // Verde claro
       return "bg-green-300/20 text-green-500 dark:text-green-200 border-green-300/30";
 
-    case "De Acordo (Diretor Geral)":
+    case "De Acordo (Diretor)":
       // Verde médio
       return "bg-green-400/20 text-green-600 dark:text-green-300 border-green-400/30";
 
