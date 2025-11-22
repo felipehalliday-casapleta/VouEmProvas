@@ -18,8 +18,8 @@ export function getStatusColor(status?: string) {
       return "bg-green-300/20 text-green-500 dark:text-green-200 border-green-300/30";
 
     case "De Acordo (Diretor)":
-      // Verde médio
-      return "bg-green-400/20 text-green-600 dark:text-green-300 border-green-400/30";
+      // Verde claro
+      return "bg-green-300/20 text-green-500 dark:text-green-200 border-green-300/30";
 
     case "Aguardando Feedback (Cliente)":
       return "bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30";
