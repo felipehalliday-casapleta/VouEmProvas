@@ -200,9 +200,9 @@ export default function EventoDetailPage() {
                       <SelectContent>
                         <SelectItem value="Em Andamento">Em Andamento</SelectItem>
                         <SelectItem value="Elaborando Proposta">Elaborando Proposta</SelectItem>
-                        <SelectItem value="Em Análise (Diretoria de Provas)">Em Análise (Diretoria de Provas)</SelectItem>
-                        <SelectItem value="Aceito (Diretoria de Provas)">Aceito (Diretoria de Provas)</SelectItem>
-                        <SelectItem value="De Acordo (Diretor Geral)">De Acordo (Diretor Geral)</SelectItem>
+                        <SelectItem value="Em Análise (Direção de Provas)">Em Análise (Direção de Provas)</SelectItem>
+                        <SelectItem value="Aceito (Direção de Provas)">Aceito (Direção de Provas)</SelectItem>
+                        <SelectItem value="De Acordo (Diretor)">De Acordo (Diretor)</SelectItem>
                         <SelectItem value="Aguardando Feedback (Cliente)">Aguardando Feedback (Cliente)</SelectItem>
                         <SelectItem value="Aprovado">Aprovado</SelectItem>
                         <SelectItem value="Recusado">Recusado</SelectItem>
