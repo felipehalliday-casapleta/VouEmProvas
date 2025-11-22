@@ -81,9 +81,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const validStatuses = [
       "Em Andamento",
       "Elaborando Proposta",
-      "Em Análise (Diretoria de Provas)",
-      "Aceito (Diretoria de Provas)",
-      "De Acordo (Diretor Geral)",
+      "Em Análise (Direção de Provas)",
+      "Aceito (Direção de Provas)",
+      "De Acordo (Diretor)",
       "Aguardando Feedback (Cliente)",
       "Aprovado",
       "Recusado",
