@@ -61,8 +61,8 @@ export default function HojePage() {
       ) : (
         <EmptyState
           icon={Calendar}
-          title="Nenhum evento para hoje"
-          description="Não há eventos programados para hoje."
+          title="Não tem prova hoje. Eu ouvi um amém?"
+          description="Acesse o menu para ver eventos futuros."
         />
       )}
     </main>
